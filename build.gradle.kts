@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.spring") version "1.9.25"
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
+    id("info.solidsoft.pitest") version "1.15.0"
     application
     jacoco
 }
@@ -31,7 +32,7 @@ dependencies {
     testImplementation("io.kotest:kotest-property:5.9.1")
     testImplementation("io.mockk:mockk:1.13.8")
 
-    // Spring test (optionnel)
+    // Spring Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
@@ -46,8 +47,6 @@ jacoco {
 tasks.withType<Test> {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-}
-tasks.withType<Test> {
     testLogging {
         showStandardStreams = true
     }
@@ -59,4 +58,14 @@ tasks.jacocoTestReport {
         xml.required.set(true)
         html.required.set(true)
     }
+}
+
+pitest {
+    junit5PluginVersion.set("1.2.0")
+    targetClasses.set(listOf("bookManager.domain.*"))
+    targetTests.set(listOf("bookManager.*"))
+    threads.set(4)
+    outputFormats.set(listOf("HTML", "XML"))
+    timestampedReports.set(false)
+    mutationThreshold.set(80)
 }
