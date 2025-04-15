@@ -30,3 +30,12 @@ jobs:
         with:
           name: rapport-tests
           path: build/test-results/test
+
+      - name: 📊 Générer le rapport de couverture
+        run: ./gradlew jacocoTestReport --no-daemon
+
+      - name: ⬆️ Publier le rapport de couverture (fichiers XML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-code
+          path: build/reports/jacoco/test
