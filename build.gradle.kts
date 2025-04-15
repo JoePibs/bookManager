@@ -4,6 +4,7 @@ plugins {
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
     application
+    jacoco
 }
 
 group = "com.example.demo"
@@ -38,11 +39,24 @@ application {
     mainClass.set("bookManager.DemoApplicationKt")
 }
 
+jacoco {
+    toolVersion = "0.8.11"
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
 tasks.withType<Test> {
     testLogging {
         showStandardStreams = true
+    }
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
     }
 }
