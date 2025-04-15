@@ -1,0 +1,28 @@
+name: Kotlin CD 🚀
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: 🚀 Déploiement (simulation)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout du code
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: 📦 Build du projet
+        run: ./gradlew build --no-daemon
+
+      - name: 🔁 Simuler un déploiement
+        run: |
+          echo "Déploiement fictif du fichier JAR"
+          ls -lh build/libs/*.jar
