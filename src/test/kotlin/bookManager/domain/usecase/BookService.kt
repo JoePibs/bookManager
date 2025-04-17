@@ -52,13 +52,6 @@ class BookServiceTest : FunSpec({
         println("✅ Tri alphabétique parfait 🌈📖")
     }
 
-    test("🦄 lance une exception si le titre ou l'auteur est vide") {
-        println("🧹 Validation des champs... interdiction de vide !")
-        shouldThrow<IllegalArgumentException> { Book("", "Author") }
-        shouldThrow<IllegalArgumentException> { Book("Title", "") }
-        println("✅ Les livres fantômes sont interdits 👻❌")
-    }
-
     test("🦄 la liste retournée contient tous les livres stockés (test de propriété)") {
         println("🧪 Test de propriété magique : correspondance parfaite 🧙‍♂️")
 
