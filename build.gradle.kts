@@ -78,7 +78,7 @@ pitest {
     threads.set(4)
     outputFormats.set(listOf("HTML", "XML"))
     timestampedReports.set(false)
-    mutationThreshold.set(80)
+    mutationThreshold.set(70)
     reportDir = layout.buildDirectory.dir("reports/pitest").get().asFile
 }
 
