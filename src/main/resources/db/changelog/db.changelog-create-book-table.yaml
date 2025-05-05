@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: you
+      changes:
+        - createTable:
+            tableName: books
+            columns:
+              - column:
+                  name: title
+                  type: varchar(255)
+              - column:
+                  name: author
+                  type: varchar(255)
