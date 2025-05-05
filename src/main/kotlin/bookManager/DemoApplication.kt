@@ -6,11 +6,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.Profile
+
 
 @SpringBootApplication
 class DemoApplication {
 
     @Bean
+    @Profile("!test") // ❗ Empêche l'exécution dans les tests
     fun run(bookService: BookService): CommandLineRunner {
         return CommandLineRunner {
             val book = Book(title = "Pney", author = "Plouf")
@@ -19,6 +22,7 @@ class DemoApplication {
         }
     }
 }
+
 
 fun main(args: Array<String>) {
     runApplication<DemoApplication>(*args)

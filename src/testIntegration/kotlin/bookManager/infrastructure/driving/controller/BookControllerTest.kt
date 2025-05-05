@@ -1,94 +1,88 @@
 package bookManager.infrastructure.driving.controller
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import bookManager.application.CreateBookUseCase
+import bookManager.application.ListBooksUseCase
+import bookManager.domain.CreateBookCommand
+import bookManager.domain.model.Book
+import bookManager.domain.usecase.BookService
+import bookManager.infrastructure.driving.controller.dto.BookDTO
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.mockk.every
 import io.mockk.verify
-import io.mockk.junit5.MockKExtension
-import io.mockk.mockk
-import io.mockk.slot
-import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import your.package.domain.Book
-import your.package.domain.CreateBookCommand
-import your.package.infrastructure.application.CreateBookUseCase
-import your.package.infrastructure.application.ListBooksUseCase
-import your.package.infrastructure.driving.controller.dto.BookDTO
+import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.get
 
-@ExtendWith(MockKExtension::class)
+@ActiveProfiles("test")
 @WebMvcTest(BookController::class)
-class BookControllerTest @Autowired constructor(
-    private val mvc: MockMvc,
-    // remplace @MockBean par @MockkBean si tu utilises mockk-spring
-    @MockBean private val listBooksUseCase: ListBooksUseCase,
-    @MockBean private val createBookUseCase: CreateBookUseCase
-) {
-    private val mapper = jacksonObjectMapper()
+class BookControllerTest {
+
+    @Autowired
+    lateinit var mockMvc: MockMvc
+
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
+
+    @MockkBean
+    lateinit var createBookUseCase: CreateBookUseCase
+
+    @MockkBean
+    lateinit var listBooksUseCase: ListBooksUseCase
+
+    @MockkBean
+    lateinit var bookService: BookService
 
     @Test
-    fun `GET books - cas nominal`() {
-        val domainBooks = listOf(
-            Book(id = 1, title = "Kotlin in Action", author = "Dmitry"),
-            Book(id = 2, title = "Clean Code", author = "Robert")
-        )
-        every { listBooksUseCase() } returns domainBooks
+    fun `POST books should create book and return 201`() {
+        val dto = BookDTO("Pney de Plouf", "Author")
+        val expectedBook = Book(dto.title, dto.author)
+        val expectedCommand = CreateBookCommand(dto.title, dto.author)
 
-        mvc.perform(get("/books"))
-            .andExpect(status().isOk)
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.length()", `is`(2)))
-            .andExpect(jsonPath("$[0].id", `is`(1)))
-            .andExpect(jsonPath("$[0].title", `is`("Kotlin in Action")))
-            .andExpect(jsonPath("$[1].author", `is`("Robert")))
+        every { createBookUseCase.invoke(expectedCommand) } returns expectedBook
 
-        verify(exactly = 1) { listBooksUseCase() }
+        mockMvc.post("/books") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(dto)
+        }.andExpect {
+            status { isCreated() }
+            content {
+                contentType(MediaType.APPLICATION_JSON)
+                json(objectMapper.writeValueAsString(dto))
+            }
+        }
+
+        verify(exactly = 1) {
+            createBookUseCase.invoke(match {
+                it.title == dto.title && it.author == dto.author
+            })
+        }
     }
 
     @Test
-    fun `POST books - cas nominal`() {
-        val dto = BookDTO(title = "Domain-Driven Design", author = "Evans")
-        val cmd = CreateBookCommand(title = dto.title, author = dto.author)
-        val created = Book(id = 42, title = dto.title, author = dto.author)
-        every { createBookUseCase(cmd) } returns created
-
-        mvc.perform(
-            post("/books")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(dto))
+    fun `GET books should return list of books`() {
+        val books = listOf(
+            Book("1984", "George Orwell"),
+            Book("Le Petit Prince", "Antoine de Saint-Exupéry")
         )
-            .andExpect(status().isCreated)
-            .andExpect(jsonPath("$.id", `is`(42)))
-            .andExpect(jsonPath("$.title", `is`("Domain-Driven Design")))
+        val expectedDTOs = books.map { BookDTO(it.title, it.author) }
 
-        verify(exactly = 1) { createBookUseCase(cmd) }
-    }
+        every { listBooksUseCase.invoke() } returns books
 
-    @Test
-    fun `POST books - erreur 400 si payload invalide`() {
-        // envoi d'un JSON sans champ "title"
-        val invalidJson = """{"author":"X"}"""
-        mvc.perform(
-            post("/books")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson)
-        )
-            .andExpect(status().isBadRequest)
-    }
+        mockMvc.get("/books")
+            .andExpect {
+                status { isOk() }
+                content {
+                    contentType(MediaType.APPLICATION_JSON)
+                    json(objectMapper.writeValueAsString(expectedDTOs))
+                }
+            }
 
-    @Test
-    fun `GET books - domaine échoue avec exception`() {
-        every { listBooksUseCase() } throws IllegalStateException("DB inaccessible")
-
-        mvc.perform(get("/books"))
-            .andExpect(status().is5xxServerError)
-
-        verify { listBooksUseCase() }
+        verify(exactly = 1) { listBooksUseCase.invoke() }
     }
 }

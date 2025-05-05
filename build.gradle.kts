@@ -28,19 +28,18 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
-    // Kotest
-    testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
-    testImplementation("io.kotest:kotest-assertions-core:5.9.1")
-    testImplementation("io.kotest:kotest-property:5.9.1")
-    // Spring MVC Test
+    // --- Tests unitaires ---
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(module = "junit-vintage-engine")
     }
-    // Mockk pour Spring
+    testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
+    testImplementation("io.kotest:kotest-assertions-core:5.9.1")
+    testImplementation("io.kotest:kotest-property:5.9.1")
+
     testImplementation("io.mockk:mockk:1.13.5")
-    testImplementation("io.mockk:mockk-spring:1.13.5")
-    // JSON assertions
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.jayway.jsonpath:json-path:2.7.0")
+
 }
 
 application {
@@ -49,7 +48,6 @@ application {
 
 jacoco {
     toolVersion = "0.8.11"
-
 }
 
 tasks.jacocoTestReport {
@@ -59,7 +57,7 @@ tasks.jacocoTestReport {
         html.required.set(true)
     }
     executionData.setFrom(
-        fileTree(buildDir).apply {
+        fileTree(layout.buildDirectory) {
             include("/jacoco/*.exec")
         }
     )
@@ -81,6 +79,7 @@ pitest {
     outputFormats.set(listOf("HTML", "XML"))
     timestampedReports.set(false)
     mutationThreshold.set(80)
+    reportDir = layout.buildDirectory.dir("reports/pitest").get().asFile
 }
 
 sourceSets {
@@ -88,7 +87,7 @@ sourceSets {
         kotlin.srcDir("src/testIntegration/kotlin")
         resources.srcDir("src/testIntegration/resources")
         compileClasspath += sourceSets["main"].output + configurations["testRuntimeClasspath"]
-        runtimeClasspath   += output + compileClasspath
+        runtimeClasspath += output + compileClasspath
     }
 }
 
@@ -107,6 +106,7 @@ tasks.register<Test>("testIntegration") {
     testClassesDirs = sourceSets["testIntegration"].output.classesDirs
     classpath = sourceSets["testIntegration"].runtimeClasspath
     shouldRunAfter("test")
+    useJUnitPlatform()
 }
 
 tasks.check {
