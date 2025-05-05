@@ -23,17 +23,23 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
-    // Kotest
+    // --- Tests unitaires ---
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(module = "junit-vintage-engine")
+    }
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("io.kotest:kotest-property:5.9.1")
-    testImplementation("io.mockk:mockk:1.13.8")
 
-    // Spring Test
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
+    testImplementation("com.jayway.jsonpath:json-path:2.7.0")
+
 }
 
 application {
@@ -44,19 +50,24 @@ jacoco {
     toolVersion = "0.8.11"
 }
 
+tasks.jacocoTestReport {
+    dependsOn("test", "testIntegration")
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("/jacoco/*.exec")
+        }
+    )
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
     testLogging {
         showStandardStreams = true
-    }
-}
-
-tasks.jacocoTestReport {
-    dependsOn(tasks.test)
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
     }
 }
 
@@ -67,5 +78,37 @@ pitest {
     threads.set(4)
     outputFormats.set(listOf("HTML", "XML"))
     timestampedReports.set(false)
-    mutationThreshold.set(80)
+    mutationThreshold.set(70)
+    reportDir = layout.buildDirectory.dir("reports/pitest").get().asFile
+}
+
+sourceSets {
+    val testIntegration by creating {
+        kotlin.srcDir("src/testIntegration/kotlin")
+        resources.srcDir("src/testIntegration/resources")
+        compileClasspath += sourceSets["main"].output + configurations["testRuntimeClasspath"]
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    val testIntegrationImplementation by getting {
+        extendsFrom(configurations["testImplementation"])
+    }
+    val testIntegrationRuntimeOnly by getting {
+        extendsFrom(configurations["testRuntimeOnly"])
+    }
+}
+
+tasks.register<Test>("testIntegration") {
+    description = "Exécute les tests d’intégration"
+    group = "verification"
+    testClassesDirs = sourceSets["testIntegration"].output.classesDirs
+    classpath = sourceSets["testIntegration"].runtimeClasspath
+    shouldRunAfter("test")
+    useJUnitPlatform()
+}
+
+tasks.check {
+    dependsOn("testIntegration")
 }

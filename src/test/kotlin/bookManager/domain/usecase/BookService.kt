@@ -4,9 +4,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.assertions.throwables.shouldThrow
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
 import bookManager.domain.model.Book
 import bookManager.domain.port.BookRepository
 import bookManager.domain.usecase.BookService
@@ -15,6 +12,8 @@ import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
 import io.kotest.property.arbitrary.filter
+import io.mockk.*
+
 
 class BookServiceTest : FunSpec({
 
@@ -28,10 +27,14 @@ class BookServiceTest : FunSpec({
     test("🦄 ajoute un livre via le dépôt") {
         println("🦄 Ajout d'un livre en cours... ✍️")
         val book = Book("1984", "George Orwell")
+        coEvery { repository.save(book) } returns book
+
         service.addBook(book)
-        verify { repository.save(book) }
+
+        coVerify { repository.save(book) }
         println("✅ Livre ajouté avec succès ! 📘✨")
     }
+
 
     test("🦄 retourne tous les livres triés par titre") {
         println("🦄 Test de tri magique des livres 📚🔤")
@@ -92,5 +95,6 @@ class BookServiceTest : FunSpec({
             println("🌟 ${books.size} livres triés sans perte de magie 🦄")
         }
     }
+
 
 })
