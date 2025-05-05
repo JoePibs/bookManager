@@ -40,6 +40,15 @@ dependencies {
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.jayway.jsonpath:json-path:2.7.0")
 
+    //--- database
+
+    implementation("org.liquibase:liquibase-core")
+    implementation("org.postgresql:postgresql")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+
+    testImplementation("org.testcontainers:postgresql:1.19.1")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.1")
+
 }
 
 application {
