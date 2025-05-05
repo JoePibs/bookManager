@@ -12,3 +12,14 @@ databaseChangeLog:
               - column:
                   name: author
                   type: varchar(255)
+  - changeSet:
+      id: 2
+      author: you
+      changes:
+        - addColumn:
+            tableName: books
+            columns:
+              - column:
+                  name: is_reserved
+                  type: boolean
+                  defaultValueBoolean: false

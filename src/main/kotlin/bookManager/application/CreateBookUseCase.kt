@@ -9,8 +9,10 @@ open class CreateBookUseCase(private val bookRepository: BookRepository) {
         return bookRepository.save(
             Book(
                 title = cmd.title,
-                author = cmd.author
+                author = cmd.author,
+                isReserved = cmd.is_reserved
             )
         )
     }
+
 }

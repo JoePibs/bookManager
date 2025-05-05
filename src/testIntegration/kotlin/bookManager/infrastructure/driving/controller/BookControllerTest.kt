@@ -40,9 +40,9 @@ class BookControllerTest {
 
     @Test
     fun `POST books should create book and return 201`() {
-        val dto = BookDTO("Pney de Plouf", "Author")
-        val expectedBook = Book(dto.title, dto.author)
-        val expectedCommand = CreateBookCommand(dto.title, dto.author)
+        val dto = BookDTO("Pney de Plouf", "Author", false)
+        val expectedBook = Book(dto.title, dto.author,dto.isReserved)
+        val expectedCommand = CreateBookCommand(dto.title, dto.author, dto.isReserved)
 
         every { createBookUseCase.invoke(expectedCommand) } returns expectedBook
 
@@ -59,7 +59,7 @@ class BookControllerTest {
 
         verify(exactly = 1) {
             createBookUseCase.invoke(match {
-                it.title == dto.title && it.author == dto.author
+                it.title == dto.title && it.author == dto.author && it.is_reserved == dto.isReserved
             })
         }
     }
@@ -67,10 +67,10 @@ class BookControllerTest {
     @Test
     fun `GET books should return list of books`() {
         val books = listOf(
-            Book("1984", "George Orwell"),
-            Book("Le Petit Prince", "Antoine de Saint-Exupéry")
+            Book("1984", "George Orwell",false),
+            Book("Le Petit Prince", "Antoine de Saint-Exupéry",false)
         )
-        val expectedDTOs = books.map { BookDTO(it.title, it.author) }
+        val expectedDTOs = books.map { BookDTO(it.title, it.author, it.isReserved) }
 
         every { listBooksUseCase.invoke() } returns books
 
@@ -85,4 +85,59 @@ class BookControllerTest {
 
         verify(exactly = 1) { listBooksUseCase.invoke() }
     }
+
+    @Test
+    fun `POST books title reserve should reserve book and return 200`() {
+        val title = "Dune"
+
+        every { bookService.reserveBook(title) } returns Unit
+
+        mockMvc.post("/books/$title/reserve")
+            .andExpect {
+                status { isOk() }
+                content {
+                    contentTypeCompatibleWith(MediaType.TEXT_PLAIN)
+                    string("Le livre a été réservé avec succès")
+                }
+            }
+
+        verify(exactly = 1) { bookService.reserveBook(title) }
+    }
+
+    @Test
+    fun `POST books title reserve should return 404 when book not found`() {
+        val title = "Inexistant"
+        every { bookService.reserveBook(title) } throws IllegalArgumentException("Livre non trouvé")
+
+        mockMvc.post("/books/$title/reserve")
+            .andExpect {
+                status { isNotFound() }
+                content {
+                    contentTypeCompatibleWith(MediaType.TEXT_PLAIN)
+                    string("Livre non trouvé")
+                }
+            }
+
+        verify(exactly = 1) { bookService.reserveBook(title) }
+    }
+
+    @Test
+    fun `POST books title reserve should return 409 when book is already reserved`() {
+        val title = "Dune"
+        every { bookService.reserveBook(title) } throws IllegalStateException("Le livre est déjà réservé")
+
+        mockMvc.post("/books/$title/reserve")
+            .andExpect {
+                status { isConflict() }
+                content {
+                    contentTypeCompatibleWith(MediaType.TEXT_PLAIN)
+                    string("Le livre est déjà réservé")
+                }
+            }
+
+        verify(exactly = 1) { bookService.reserveBook(title) }
+    }
+
+
+
 }
