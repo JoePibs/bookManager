@@ -1,9 +1,10 @@
 package bookManager.domain.usecase
 
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
+
 import bookManager.domain.model.Book
 import bookManager.domain.port.BookRepository
 import bookManager.domain.usecase.BookService
@@ -20,24 +21,25 @@ class BookServiceTest : FunSpec({
     val repository = mockk<BookRepository>(relaxUnitFun = true)
     val service = BookService(repository)
 
-    val validStrings: Arb<String> = Arb.string(1..20).filter { s: String ->
-        s.isNotBlank() && s.any { c -> !c.isWhitespace() }
+    val validStrings = Arb.string(1..20).filter { it.isNotBlank() && it.any { c -> !c.isWhitespace() } }
+
+    fun randomBooks(titles: List<String>, authors: List<String>) =
+        titles.zip(authors).map { (t, a) -> Book(t, a) }
+
+    beforeTest {
+        clearMocks(repository)
     }
 
-    test("🦄 ajoute un livre via le dépôt") {
-        println("🦄 Ajout d'un livre en cours... ✍️")
+    test("ajoute un livre via le dépôt") {
         val book = Book("1984", "George Orwell")
-        coEvery { repository.save(book) } returns book
+        every { repository.save(book) } returns book
 
         service.addBook(book)
 
-        coVerify { repository.save(book) }
-        println("✅ Livre ajouté avec succès ! 📘✨")
+        verify { repository.save(book) }
     }
 
-
-    test("🦄 retourne tous les livres triés par titre") {
-        println("🦄 Test de tri magique des livres 📚🔤")
+    test("retourne tous les livres triés par titre") {
         val books = listOf(
             Book("Zebra Book", "Author Z"),
             Book("Apple Book", "Author A"),
@@ -47,70 +49,59 @@ class BookServiceTest : FunSpec({
 
         val result = service.getAllBooksSorted()
 
-        result shouldContainExactly listOf(
+        result shouldBe listOf(
             Book("Apple Book", "Author A"),
             Book("Mango Book", "Author M"),
             Book("Zebra Book", "Author Z")
         )
-        println("✅ Tri alphabétique parfait 🌈📖")
     }
 
-    test("🦄 la liste retournée contient tous les livres stockés (test de propriété)") {
-        println("🧪 Test de propriété magique : correspondance parfaite 🧙‍♂️")
-
-        checkAll(5,Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
-            val books = titles.zip(authors).map { (t, a) -> Book(t, a) }
+    test("la liste retournée contient tous les livres stockés (test de propriété)") {
+        checkAll(5, Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
+            val books = randomBooks(titles, authors)
             every { repository.findAll() } returns books
-            val result = service.getAllBooksSorted()
-            result shouldContainExactlyInAnyOrder books
 
-            println("🦄 ${books.size} livres vérifiés avec succès 🌟📚")
+            val result = service.getAllBooksSorted()
+
+            result shouldContainExactlyInAnyOrder books
         }
     }
 
-    test("🦄 les livres sont triés par titre (ordre alphabétique)") {
-        println("🔠 Vérification de l’ordre magique des titres ✨")
-
-        checkAll(5,Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
-            val books = titles.zip(authors).map { (t, a) -> Book(t, a) }
+    test("les livres sont triés par titre (ordre alphabétique)") {
+        checkAll(5, Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
+            val books = randomBooks(titles, authors)
             every { repository.findAll() } returns books
+
             val result = service.getAllBooksSorted()
             val expected = books.sortedBy { it.title }
 
-            result shouldContainExactly expected
-
-            println("📚 ${books.size} livres bien triés par ordre alphabétique 🌈")
+            result shouldBe expected
         }
     }
 
-    test("🦄 la liste triée contient exactement les mêmes livres que la liste initiale") {
-        println("🦄 Test de propriété : intégrité de la liste après tri ✨")
-
-        checkAll(5,Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
-            val books = titles.zip(authors).map { (t, a) -> Book(t, a) }
+    test("la liste triée contient exactement les mêmes livres que la liste initiale") {
+        checkAll(5, Arb.list(validStrings, 1..10), Arb.list(validStrings, 1..10)) { titles, authors ->
+            val books = randomBooks(titles, authors)
             val sorted = books.sortedBy { it.title }
 
             sorted shouldContainExactlyInAnyOrder books
-
-            println("🌟 ${books.size} livres triés sans perte de magie 🦄")
         }
     }
 
-    test("🦄 réserve un livre non réservé avec succès") {
+    test("réserve un livre non réservé avec succès") {
         val book = Book("Dune", "Frank Herbert", isReserved = false)
+        val updatedBook = book.copy(isReserved = true)
 
         every { repository.findByTitle("Dune") } returns book
-        every { repository.save(match { it.title == "Dune" && it.isReserved }) } returns book.copy(isReserved = true)
+        every { repository.save(updatedBook) } returns updatedBook
 
         service.reserveBook("Dune")
 
         verify { repository.findByTitle("Dune") }
-        verify { repository.save(match { it.title == "Dune" && it.isReserved }) }
-
-        println("📘 Livre réservé avec succès 🌟")
+        verify { repository.save(updatedBook) }
     }
 
-    test("🛑 réserver un livre inexistant lève une exception") {
+    test("réserver un livre inexistant lève une exception") {
         every { repository.findByTitle("Fantôme") } returns null
 
         shouldThrow<IllegalArgumentException> {
@@ -118,10 +109,9 @@ class BookServiceTest : FunSpec({
         }
 
         verify { repository.findByTitle("Fantôme") }
-        println("❗ Livre introuvable détecté avec succès 🚨")
     }
 
-    test("⚠️ réserver un livre déjà réservé lève une exception") {
+    test("réserver un livre déjà réservé lève une exception") {
         val reservedBook = Book("Dune", "Frank Herbert", isReserved = true)
 
         every { repository.findByTitle("Dune") } returns reservedBook
@@ -131,9 +121,6 @@ class BookServiceTest : FunSpec({
         }
 
         verify { repository.findByTitle("Dune") }
-        println("🚫 Réservation doublon détectée avec succès ❌")
     }
-
-
 
 })
