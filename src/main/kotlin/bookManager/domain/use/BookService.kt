@@ -14,4 +14,17 @@ class BookService(private val repository: BookRepository) {
     fun getAllBooksSorted(): List<Book> {
         return repository.findAll().sortedBy { it.title }
     }
+
+    fun reserveBook(title: String) {
+        val book = repository.findByTitle(title)
+            ?: throw IllegalArgumentException("Livre avec le titre '$title' introuvable")
+
+        if (book.isReserved) {
+            throw IllegalStateException("Le livre est déjà réservé")
+        }
+
+        val reservedBook = book.copy(isReserved = true)
+        repository.save(reservedBook)
+    }
+
 }

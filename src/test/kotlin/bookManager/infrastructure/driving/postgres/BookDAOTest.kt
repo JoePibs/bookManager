@@ -40,10 +40,11 @@ class BookDAOTest {
 
     @Test
     fun `save and retrieve books`() {
-        val book = Book("Test Title", "Test Author")
+        val book = Book("Test Title", "Test Author", true)
         dao.save(book)
 
         val books = dao.findAll()
         Assertions.assertTrue(books.contains(book))
+        println("✅ Le livre a été sauvé et retrouvé ! 📘✨")
     }
 }
