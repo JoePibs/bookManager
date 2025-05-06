@@ -96,5 +96,44 @@ class BookServiceTest : FunSpec({
         }
     }
 
+    test("🦄 réserve un livre non réservé avec succès") {
+        val book = Book("Dune", "Frank Herbert", isReserved = false)
+
+        every { repository.findByTitle("Dune") } returns book
+        every { repository.save(match { it.title == "Dune" && it.isReserved }) } returns book.copy(isReserved = true)
+
+        service.reserveBook("Dune")
+
+        verify { repository.findByTitle("Dune") }
+        verify { repository.save(match { it.title == "Dune" && it.isReserved }) }
+
+        println("📘 Livre réservé avec succès 🌟")
+    }
+
+    test("🛑 réserver un livre inexistant lève une exception") {
+        every { repository.findByTitle("Fantôme") } returns null
+
+        shouldThrow<IllegalArgumentException> {
+            service.reserveBook("Fantôme")
+        }
+
+        verify { repository.findByTitle("Fantôme") }
+        println("❗ Livre introuvable détecté avec succès 🚨")
+    }
+
+    test("⚠️ réserver un livre déjà réservé lève une exception") {
+        val reservedBook = Book("Dune", "Frank Herbert", isReserved = true)
+
+        every { repository.findByTitle("Dune") } returns reservedBook
+
+        shouldThrow<IllegalStateException> {
+            service.reserveBook("Dune")
+        }
+
+        verify { repository.findByTitle("Dune") }
+        println("🚫 Réservation doublon détectée avec succès ❌")
+    }
+
+
 
 })

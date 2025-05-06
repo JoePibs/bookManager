@@ -45,5 +45,6 @@ class BookDAOTest {
 
         val books = dao.findAll()
         Assertions.assertTrue(books.contains(book))
+        println("✅ Le livre a été sauvé et retrouvé ! 📘✨")
     }
 }

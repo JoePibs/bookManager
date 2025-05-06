@@ -39,7 +39,7 @@ class BookControllerTest {
     lateinit var bookService: BookService
 
     @Test
-    fun `POST books should create book and return 201`() {
+    fun `POST Doit creer un livre and return une 201`() {
         val dto = BookDTO("Pney de Plouf", "Author", false)
         val expectedBook = Book(dto.title, dto.author,dto.isReserved)
         val expectedCommand = CreateBookCommand(dto.title, dto.author, dto.isReserved)
@@ -62,10 +62,12 @@ class BookControllerTest {
                 it.title == dto.title && it.author == dto.author && it.is_reserved == dto.isReserved
             })
         }
+        println("✅ Livre crée avec une 201 ! 📘✨")
+
     }
 
     @Test
-    fun `GET books should return list of books`() {
+    fun `GET Retourne un liste de livres`() {
         val books = listOf(
             Book("1984", "George Orwell",false),
             Book("Le Petit Prince", "Antoine de Saint-Exupéry",false)
@@ -84,10 +86,12 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { listBooksUseCase.invoke() }
+        println("✅ Liste de livre ajouté! 📘✨")
+
     }
 
     @Test
-    fun `POST books title reserve should reserve book and return 200`() {
+    fun `POST réserver le livre et retourner 200 OK`() {
         val title = "Dune"
 
         every { bookService.reserveBook(title) } returns Unit
@@ -102,10 +106,12 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
+        println("✅ Livre réservé avec un 200 OK ! 📘✨")
+
     }
 
     @Test
-    fun `POST books title reserve should return 404 when book not found`() {
+    fun `POST retourner 404 si le livre n’existe pas`() {
         val title = "Inexistant"
         every { bookService.reserveBook(title) } throws IllegalArgumentException("Livre non trouvé")
 
@@ -119,10 +125,12 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
+        println("✅ Errare Humanum es ...resa echec 402 livre not found ! 📘✨")
+
     }
 
     @Test
-    fun `POST books title reserve should return 409 when book is already reserved`() {
+    fun `POST retourner 409 si le livre est déja reserver`() {
         val title = "Dune"
         every { bookService.reserveBook(title) } throws IllegalStateException("Le livre est déjà réservé")
 
@@ -136,8 +144,8 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
+        println("✅ quelqu'un a deja pris le livre, petite licorne ! 📘✨")
+
     }
-
-
 
 }
