@@ -38,39 +38,41 @@ class BookControllerTest {
     @MockkBean
     lateinit var bookService: BookService
 
+    private fun toJson(obj: Any): String = objectMapper.writeValueAsString(obj)
+
     @Test
-    fun `POST Doit creer un livre and return une 201`() {
+    fun `POST - should create a book and return 201 Created`() {
         val dto = BookDTO("Pney de Plouf", "Author", false)
-        val expectedBook = Book(dto.title, dto.author,dto.isReserved)
+        val expectedBook = Book(dto.title, dto.author, dto.isReserved)
         val expectedCommand = CreateBookCommand(dto.title, dto.author, dto.isReserved)
 
         every { createBookUseCase.invoke(expectedCommand) } returns expectedBook
 
         mockMvc.post("/books") {
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(dto)
+            content = toJson(dto)
         }.andExpect {
             status { isCreated() }
             content {
                 contentType(MediaType.APPLICATION_JSON)
-                json(objectMapper.writeValueAsString(dto))
+                json(toJson(dto))
             }
         }
 
         verify(exactly = 1) {
             createBookUseCase.invoke(match {
-                it.title == dto.title && it.author == dto.author && it.is_reserved == dto.isReserved
+                it.title == dto.title &&
+                        it.author == dto.author &&
+                        it.is_reserved == dto.isReserved
             })
         }
-        println("✅ Livre crée avec une 201 ! 📘✨")
-
     }
 
     @Test
-    fun `GET Retourne un liste de livres`() {
+    fun `GET - should return list of books`() {
         val books = listOf(
-            Book("1984", "George Orwell",false),
-            Book("Le Petit Prince", "Antoine de Saint-Exupéry",false)
+            Book("1984", "George Orwell", false),
+            Book("Le Petit Prince", "Antoine de Saint-Exupéry", false)
         )
         val expectedDTOs = books.map { BookDTO(it.title, it.author, it.isReserved) }
 
@@ -81,19 +83,16 @@ class BookControllerTest {
                 status { isOk() }
                 content {
                     contentType(MediaType.APPLICATION_JSON)
-                    json(objectMapper.writeValueAsString(expectedDTOs))
+                    json(toJson(expectedDTOs))
                 }
             }
 
         verify(exactly = 1) { listBooksUseCase.invoke() }
-        println("✅ Liste de livre ajouté! 📘✨")
-
     }
 
     @Test
-    fun `POST réserver le livre et retourner 200 OK`() {
+    fun `POST - should reserve a book and return 200 OK`() {
         val title = "Dune"
-
         every { bookService.reserveBook(title) } returns Unit
 
         mockMvc.post("/books/$title/reserve")
@@ -106,12 +105,10 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
-        println("✅ Livre réservé avec un 200 OK ! 📘✨")
-
     }
 
     @Test
-    fun `POST retourner 404 si le livre n’existe pas`() {
+    fun `POST - should return 404 when book is not found`() {
         val title = "Inexistant"
         every { bookService.reserveBook(title) } throws IllegalArgumentException("Livre non trouvé")
 
@@ -125,12 +122,10 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
-        println("✅ Errare Humanum es ...resa echec 402 livre not found ! 📘✨")
-
     }
 
     @Test
-    fun `POST retourner 409 si le livre est déja reserver`() {
+    fun `POST - should return 409 when book is already reserved`() {
         val title = "Dune"
         every { bookService.reserveBook(title) } throws IllegalStateException("Le livre est déjà réservé")
 
@@ -144,8 +139,5 @@ class BookControllerTest {
             }
 
         verify(exactly = 1) { bookService.reserveBook(title) }
-        println("✅ quelqu'un a deja pris le livre, petite licorne ! 📘✨")
-
     }
-
 }

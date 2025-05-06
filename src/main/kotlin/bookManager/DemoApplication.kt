@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Profile
 class DemoApplication {
 
     @Bean
-    @Profile("!test") // ❗ Empêche l'exécution dans les tests
+    @Profile("!test")
     fun run(bookService: BookService): CommandLineRunner {
         return CommandLineRunner {
             val book = Book(title = "Pney", author = "Plouf")
